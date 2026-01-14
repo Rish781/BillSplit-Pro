@@ -3,30 +3,43 @@ package com.billsplitpro
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.billsplitpro.ui.theme.BillSplitProTheme // This assumes Theme.kt is still in ui/theme
+import com.billsplitpro.ui.theme.BillSplitProTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             BillSplitProTheme {
+                // A dark, modern background color
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = Color(0xFF121212) 
                 ) {
                     BillSplitApp()
                 }
@@ -40,29 +53,102 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     var name by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp)
+    ) {
+        // --- TOP HEADER CARD ---
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        // A beautiful blue-purple gradient
+                        Brush.horizontalGradient(
+                            colors = listOf(Color(0xFF4A00E0), Color(0xFF8E2DE2))
+                        )
+                    )
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Total Expenses",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 16.sp
+                    )
+                    Text(
+                        text = "₹${viewModel.getTotal()}",
+                        color = Color.White,
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // --- INPUT SECTION ---
         Text(
-            text = "Total: ₹${viewModel.getTotal()}",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
+            text = "Add New",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+            modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // Name Input
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Expense Name") },
-                modifier = Modifier.weight(1f).padding(end = 8.dp)
+                label = { Text("What for?") },
+                placeholder = { Text("e.g. Pizza") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF8E2DE2),
+                    unfocusedBorderColor = Color.Gray,
+                    focusedLabelColor = Color(0xFF8E2DE2),
+                    unfocusedContainerColor = Color(0xFF1E1E1E),
+                    focusedContainerColor = Color(0xFF1E1E1E),
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                ),
+                modifier = Modifier
+                    .weight(1.5f)
+                    .padding(end = 8.dp),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
+
+            // Amount Input
             OutlinedTextField(
                 value = amount,
                 onValueChange = { amount = it },
-                label = { Text("Amount") },
+                label = { Text("₹") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF8E2DE2),
+                    unfocusedBorderColor = Color.Gray,
+                    focusedLabelColor = Color(0xFF8E2DE2),
+                    unfocusedContainerColor = Color(0xFF1E1E1E),
+                    focusedContainerColor = Color(0xFF1E1E1E),
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                ),
                 modifier = Modifier.weight(1f)
             )
         }
 
+        // Add Button
         Button(
             onClick = {
                 val cost = amount.toDoubleOrNull()
@@ -72,14 +158,34 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                     amount = ""
                 }
             },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp)
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF8E2DE2) // Matches the gradient
+            )
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Add Expense")
+            Text("Add to List", fontSize = 16.sp)
         }
 
-        LazyColumn(modifier = Modifier.padding(top = 16.dp)) {
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // --- LIST SECTION ---
+        Text(
+            text = "Recent Transactions",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             items(viewModel.expenses) { expense ->
                 ExpenseItem(expense = expense, onDelete = { viewModel.removeExpense(expense) })
             }
@@ -90,23 +196,65 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
 @Composable
 fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = expense.name, style = MaterialTheme.typography.bodyLarge)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Little icon circle
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF2C2C2C)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.ShoppingCart, 
+                        contentDescription = null, 
+                        tint = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(16.dp))
+                
+                Column {
+                    Text(
+                        text = expense.name,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Today",
+                        color = Color.Gray,
+                        fontSize = 12.sp
+                    )
+                }
             }
-            Text(
-                text = "₹${expense.amount}",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete")
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "₹${expense.amount}",
+                    color = Color(0xFF4CAF50), // Green for money
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete, 
+                        contentDescription = "Delete", 
+                        tint = Color(0xFFEF5350) // Soft red
+                    )
+                }
             }
         }
     }
