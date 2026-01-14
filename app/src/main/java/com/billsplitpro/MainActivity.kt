@@ -3,7 +3,6 @@ package com.billsplitpro
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,152 +13,101 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.billsplitpro.ui.theme.BillSplitProTheme
+import com.billsplitpro.ui.theme.BillSplitProTheme // This assumes Theme.kt is still in ui/theme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             BillSplitProTheme {
-                BillSplitApp()
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    BillSplitApp()
+                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
-    val expenses by remember { derivedStateOf { viewModel.expenses } }
-    var showAddDialog by remember { mutableStateOf(false) }
+    var name by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("") }
 
-    Scaffold(
-        topBar = {
-            SmallTopAppBar(title = { Text("BillSplit Pro") })
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
-            }
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Total Group Spend",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "₹${viewModel.getTotal()}",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                }
-            }
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = "Total: ₹${viewModel.getTotal()}",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(items = expenses, key = { it.id }) { expense ->
-                    ExpenseItem(expense = expense, onDelete = { viewModel.deleteExpense(it) })
-                }
-            }
-        }
-
-        if (showAddDialog) {
-            AddExpenseDialog(
-                onAdd = { title, amount ->
-                    viewModel.addExpense(title, amount, "Me")
-                    showAddDialog = false
-                },
-                onCancel = { showAddDialog = false }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Expense Name") },
+                modifier = Modifier.weight(1f).padding(end = 8.dp)
             )
+            OutlinedTextField(
+                value = amount,
+                onValueChange = { amount = it },
+                label = { Text("Amount") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Button(
+            onClick = {
+                val cost = amount.toDoubleOrNull()
+                if (name.isNotBlank() && cost != null) {
+                    viewModel.addExpense(name, cost)
+                    name = ""
+                    amount = ""
+                }
+            },
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Add Expense")
+        }
+
+        LazyColumn(modifier = Modifier.padding(top = 16.dp)) {
+            items(viewModel.expenses) { expense ->
+                ExpenseItem(expense = expense, onDelete = { viewModel.removeExpense(expense) })
+            }
         }
     }
 }
 
 @Composable
-fun ExpenseItem(expense: Expense, onDelete: (Expense) -> Unit) {
+fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier
-                .padding(12.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = expense.title, style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Paid by Me", style = MaterialTheme.typography.bodySmall)
+                Text(text = expense.name, style = MaterialTheme.typography.bodyLarge)
             }
-            Text(text = "₹${expense.amount}", style = MaterialTheme.typography.bodyLarge)
-            IconButton(onClick = { onDelete(expense) }) {
+            Text(
+                text = "₹${expense.amount}",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Delete")
             }
         }
     }
-}
-
-@Composable
-fun AddExpenseDialog(onAdd: (String, Double) -> Unit, onCancel: () -> Unit) {
-    var title by remember { mutableStateOf("") }
-    var amountText by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text("Add Expense") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Title") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { amountText = it },
-                    label = { Text("Amount") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                val amt = amountText.toDoubleOrNull() ?: 0.0
-                if (title.trim().isNotEmpty()) {
-                    onAdd(title.trim(), amt)
-                }
-            }) {
-                Text("Add")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel) {
-                Text("Cancel")
-            }
-        }
-    )
 }

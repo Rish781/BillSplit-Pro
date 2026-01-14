@@ -1,8 +1,6 @@
-package com.billsplitpro
+package com.billsplitpro  // <--- This line was likely wrong!
 
 data class Expense(
-    val id: Long = System.currentTimeMillis(),
-    val title: String,
-    val amount: Double,
-    val paidBy: String
+    val name: String,
+    val amount: Double
 )
