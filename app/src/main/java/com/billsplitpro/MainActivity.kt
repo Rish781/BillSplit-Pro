@@ -14,7 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Remove // New Icon
+// REMOVED: import androidx.compose.material.icons.filled.Remove (This was causing the crash)
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,10 +51,10 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     var name by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     
-    // NEW: State for number of people
+    // State for number of people
     var personCount by remember { mutableIntStateOf(1) }
 
-    // NEW: Calculate Split instantly
+    // Calculate Split instantly
     val totalAmount = viewModel.getTotal()
     val perPersonAmount = if (personCount > 0) totalAmount / personCount else 0.0
 
@@ -63,7 +63,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             .fillMaxSize()
             .padding(20.dp)
     ) {
-        // --- TOP HEADER CARD (Updated with Split Info) ---
+        // --- TOP HEADER CARD ---
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -105,9 +105,8 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                         fontSize = 14.sp
                     )
                     Text(
-                        // Format to 2 decimal places so it looks like money
                         text = "₹${String.format("%.2f", perPersonAmount)}",
-                        color = Color(0xFF69F0AE), // Bright Green for the result
+                        color = Color(0xFF69F0AE),
                         fontSize = 40.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -115,7 +114,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             }
         }
 
-        // --- SPLIT COUNTER SECTION (NEW) ---
+        // --- SPLIT COUNTER SECTION ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -134,12 +133,17 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Minus Button
+                // Minus Button (Fixed: Uses Text instead of missing Icon)
                 IconButton(
                     onClick = { if (personCount > 1) personCount-- },
                     modifier = Modifier.background(Color(0xFF2C2C2C), CircleShape)
                 ) {
-                    Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = Color.White)
+                    Text(
+                        text = "-", 
+                        color = Color.White, 
+                        fontSize = 24.sp, 
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 Text(
