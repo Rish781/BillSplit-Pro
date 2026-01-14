@@ -17,11 +17,7 @@ android {
             useSupportLibrary = true
         }
     }
-    sourceSets {
-        getByName("main") {
-            res.srcDirs("src/main/res") 
-        }
-    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -29,8 +25,9 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_17
-        targetCompatibility = JavaVersion.VERSION_1_17
+        // FIXED TYPO HERE: Changed VERSION_1_17 to VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
         jvmTarget = "17"
@@ -39,8 +36,6 @@ android {
         compose = true
     }
     composeOptions {
-        // THIS WAS THE CULPRIT! 
-        // Changed from 1.5.4 to 1.5.8 to match Kotlin 1.9.22
         kotlinCompilerExtensionVersion = "1.5.8"
     }
     packaging {
