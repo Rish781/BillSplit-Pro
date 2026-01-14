@@ -50,14 +50,17 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
-    // FIXED: Added space between 'val' and 'context'
     val context = LocalContext.current
+
+    // NEW: We "Collect" the live data from the database
+    val expensesList by viewModel.expenses.collectAsState(initial = emptyList())
 
     var name by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var personCount by remember { mutableIntStateOf(1) }
 
-    val totalAmount = viewModel.getTotal()
+    // Calculate total from the live list
+    val totalAmount = expensesList.sumOf { it.amount }
     val perPersonAmount = if (personCount > 0) totalAmount / personCount else 0.0
 
     Column(
@@ -86,7 +89,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Total Expenses", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
-                    Text("₹${totalAmount}", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                    Text("₹$totalAmount", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     Divider(color = Color.White.copy(alpha = 0.2f), thickness = 1.dp)
@@ -144,8 +147,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                     type = "text/plain"
                 }
                 val shareIntent = Intent.createChooser(sendIntent, "Share Bill via")
-                
-                // FIXED: Now using the correct variable name
                 context.startActivity(shareIntent)
             },
             modifier = Modifier
@@ -206,8 +207,9 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Updated to use the live 'expensesList'
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(viewModel.expenses) { expense ->
+            items(expensesList) { expense ->
                 ExpenseItem(expense = expense, onDelete = { viewModel.removeExpense(expense) })
             }
         }

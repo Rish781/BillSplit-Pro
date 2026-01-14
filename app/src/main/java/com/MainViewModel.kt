@@ -1,20 +1,27 @@
-package com.billsplitpro // <--- This must match the folder!
+package com.billsplitpro
 
-import androidx.compose.runtime.mutableStateListOf
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 
-class MainViewModel : ViewModel() {
-    val expenses = mutableStateListOf<Expense>()
+class MainViewModel(application: Application) : AndroidViewModel(application) {
+    private val database = AppDatabase.getDatabase(application)
+    private val dao = database.expenseDao()
+
+    // This is now a "Live Stream" from the database
+    val expenses: Flow<List<Expense>> = dao.getAllExpenses()
 
     fun addExpense(name: String, amount: Double) {
-        expenses.add(Expense(name, amount))
+        viewModelScope.launch {
+            dao.insert(Expense(name = name, amount = amount))
+        }
     }
 
     fun removeExpense(expense: Expense) {
-        expenses.remove(expense)
-    }
-
-    fun getTotal(): Double {
-        return expenses.sumOf { it.amount }
+        viewModelScope.launch {
+            dao.delete(expense)
+        }
     }
 }
