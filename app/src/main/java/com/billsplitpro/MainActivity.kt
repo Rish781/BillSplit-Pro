@@ -13,8 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star // Changed to Star (Safe)
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -36,7 +34,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             BillSplitProTheme {
-                // A dark, modern background color
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF121212) 
@@ -69,7 +66,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             Box(
                 modifier = Modifier
                     .background(
-                        // A beautiful blue-purple gradient
                         Brush.horizontalGradient(
                             colors = listOf(Color(0xFF4A00E0), Color(0xFF8E2DE2))
                         )
@@ -104,7 +100,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
         )
 
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            // Name Input
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -127,7 +122,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
 
-            // Amount Input
             OutlinedTextField(
                 value = amount,
                 onValueChange = { amount = it },
@@ -148,7 +142,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             )
         }
 
-        // Add Button
         Button(
             onClick = {
                 val cost = amount.toDoubleOrNull()
@@ -164,7 +157,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                 .height(50.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF8E2DE2) // Matches the gradient
+                containerColor = Color(0xFF8E2DE2)
             )
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
@@ -208,7 +201,6 @@ fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Little icon circle
                 Box(
                     modifier = Modifier
                         .size(40.dp)
@@ -216,8 +208,9 @@ fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
                         .background(Color(0xFF2C2C2C)),
                     contentAlignment = Alignment.Center
                 ) {
+                    // Changed to Star icon (Safe)
                     Icon(
-                        Icons.Default.ShoppingCart, 
+                        Icons.Default.Star, 
                         contentDescription = null, 
                         tint = Color.White.copy(alpha = 0.7f)
                     )
@@ -243,7 +236,7 @@ fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "₹${expense.amount}",
-                    color = Color(0xFF4CAF50), // Green for money
+                    color = Color(0xFF4CAF50),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(end = 8.dp)
@@ -252,7 +245,7 @@ fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
                     Icon(
                         Icons.Default.Delete, 
                         contentDescription = "Delete", 
-                        tint = Color(0xFFEF5350) // Soft red
+                        tint = Color(0xFFEF5350)
                     )
                 }
             }
