@@ -45,6 +45,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// FIXED: Added this "OptIn" line to allow FilterChips
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     val context = LocalContext.current
@@ -54,7 +56,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     var amount by remember { mutableStateOf("") }
     var personCount by remember { mutableIntStateOf(1) }
     
-    // NEW: Category Selection State
     val categories = listOf("Food", "Travel", "Home", "Fun", "Other")
     var selectedCategory by remember { mutableStateOf("Food") }
 
@@ -151,7 +152,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                 onClick = {
                     val cost = amount.toDoubleOrNull()
                     if (name.isNotBlank() && cost != null) {
-                        viewModel.addExpense(name, cost, selectedCategory) // Pass category
+                        viewModel.addExpense(name, cost, selectedCategory)
                         name = ""
                         amount = ""
                     }
@@ -164,7 +165,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             }
         }
 
-        // --- NEW: CATEGORY SELECTOR ---
+        // --- CATEGORY SELECTOR ---
         LazyRow(
             modifier = Modifier.padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -222,7 +223,7 @@ fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(expense.name, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text(expense.type, color = Color.Gray, fontSize = 12.sp) // Show Category Name
+                    Text(expense.type, color = Color.Gray, fontSize = 12.sp)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -235,11 +236,10 @@ fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
     }
 }
 
-// Helper function to pick the right icon
 fun getIconForCategory(category: String): ImageVector {
     return when (category) {
-        "Food" -> Icons.Default.ShoppingCart // Used ShoppingCart as generic "Food/Buy"
-        "Travel" -> Icons.Default.Info // Used Info as generic "Travel/Direction"
+        "Food" -> Icons.Default.ShoppingCart
+        "Travel" -> Icons.Default.Info
         "Home" -> Icons.Default.Home
         "Fun" -> Icons.Default.Star
         else -> Icons.Default.List
