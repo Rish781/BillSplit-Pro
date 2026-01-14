@@ -1,6 +1,6 @@
 package com.billsplitpro
 
-import android.content.Intent // NEW: Needed for sharing
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,7 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Send // NEW: Safe icon for sharing
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext // NEW: Needed to launch apps
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -50,8 +50,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
-    // NEW: Get the "Context" (The Android System link) so we can launch apps
-    valcontext = LocalContext.current
+    // FIXED: Added space between 'val' and 'context'
+    val context = LocalContext.current
 
     var name by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
@@ -125,10 +125,9 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             }
         }
 
-        // --- NEW: SHARE BUTTON ---
+        // --- SHARE BUTTON ---
         Button(
             onClick = {
-                // 1. Create the message text
                 val shareText = """
                     🧾 *BillSplit Pro Report*
                     ------------------------
@@ -139,7 +138,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                     Sent via BillSplit Pro
                 """.trimIndent()
 
-                // 2. Create the Android Intent to share it
                 val sendIntent = Intent().apply {
                     action = Intent.ACTION_SEND
                     putExtra(Intent.EXTRA_TEXT, shareText)
@@ -147,15 +145,15 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                 }
                 val shareIntent = Intent.createChooser(sendIntent, "Share Bill via")
                 
-                // 3. Launch it!
-                valcontext.startActivity(shareIntent)
+                // FIXED: Now using the correct variable name
+                context.startActivity(shareIntent)
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 24.dp)
                 .height(50.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)) // WhatsApp Green!
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
         ) {
             Icon(Icons.Default.Send, contentDescription = null, tint = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
