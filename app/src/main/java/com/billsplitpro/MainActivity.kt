@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -45,7 +44,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// FIXED: Added this "OptIn" line to allow FilterChips
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
@@ -55,9 +53,11 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     var name by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var personCount by remember { mutableIntStateOf(1) }
-    
     val categories = listOf("Food", "Travel", "Home", "Fun", "Other")
     var selectedCategory by remember { mutableStateOf("Food") }
+    
+    // NEW: State to track which item we are about to delete
+    var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
 
     val totalAmount = expensesList.sumOf { it.amount }
     val perPersonAmount = if (personCount > 0) totalAmount / personCount else 0.0
@@ -194,8 +194,37 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
         // --- EXPENSE LIST ---
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(expensesList) { expense ->
-                ExpenseItem(expense = expense, onDelete = { viewModel.removeExpense(expense) })
+                // CLICKING DELETE NOW TRIGGERS THE POPUP
+                ExpenseItem(expense = expense, onDelete = { expenseToDelete = expense })
             }
+        }
+
+        // --- DELETE CONFIRMATION DIALOG ---
+        if (expenseToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { expenseToDelete = null },
+                title = { Text(text = "Delete Expense?") },
+                text = { Text("Are you sure you want to delete '${expenseToDelete?.name}'? This cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.removeExpense(expenseToDelete!!)
+                            expenseToDelete = null // Close dialog
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF5350))
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { expenseToDelete = null }) {
+                        Text("Cancel", color = Color.White)
+                    }
+                },
+                containerColor = Color(0xFF2C2C2C),
+                titleContentColor = Color.White,
+                textContentColor = Color.Gray
+            )
         }
     }
 }
@@ -213,7 +242,6 @@ fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Dynamic Icon based on Category
                 Box(
                     modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFF2C2C2C)),
                     contentAlignment = Alignment.Center

@@ -3,7 +3,9 @@
 
     <application
         android:allowBackup="true"
-        android:label="BillSplitPro"
+        android:label="BillSplit Pro"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         
