@@ -10,12 +10,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getDatabase(application)
     private val dao = database.expenseDao()
 
-    // This is now a "Live Stream" from the database
     val expenses: Flow<List<Expense>> = dao.getAllExpenses()
 
-    fun addExpense(name: String, amount: Double) {
+    // UPDATED: Now accepts a 'type'
+    fun addExpense(name: String, amount: Double, type: String) {
         viewModelScope.launch {
-            dao.insert(Expense(name = name, amount = amount))
+            dao.insert(Expense(name = name, amount = amount, type = type))
         }
     }
 
