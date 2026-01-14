@@ -13,7 +13,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Star // Changed to Star (Safe)
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Remove // New Icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,13 +50,20 @@ class MainActivity : ComponentActivity() {
 fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     var name by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
+    
+    // NEW: State for number of people
+    var personCount by remember { mutableIntStateOf(1) }
+
+    // NEW: Calculate Split instantly
+    val totalAmount = viewModel.getTotal()
+    val perPersonAmount = if (personCount > 0) totalAmount / personCount else 0.0
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(20.dp)
     ) {
-        // --- TOP HEADER CARD ---
+        // --- TOP HEADER CARD (Updated with Split Info) ---
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -78,11 +86,28 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                     Text(
                         text = "Total Expenses",
                         color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 16.sp
+                        fontSize = 14.sp
                     )
                     Text(
-                        text = "₹${viewModel.getTotal()}",
+                        text = "₹${totalAmount}",
                         color = Color.White,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Divider(color = Color.White.copy(alpha = 0.2f), thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Per Person",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        // Format to 2 decimal places so it looks like money
+                        text = "₹${String.format("%.2f", perPersonAmount)}",
+                        color = Color(0xFF69F0AE), // Bright Green for the result
                         fontSize = 40.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -90,9 +115,54 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             }
         }
 
+        // --- SPLIT COUNTER SECTION (NEW) ---
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp)
+                .background(Color(0xFF1E1E1E), RoundedCornerShape(12.dp))
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Split Among",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Minus Button
+                IconButton(
+                    onClick = { if (personCount > 1) personCount-- },
+                    modifier = Modifier.background(Color(0xFF2C2C2C), CircleShape)
+                ) {
+                    Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = Color.White)
+                }
+
+                Text(
+                    text = "$personCount",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                // Plus Button
+                IconButton(
+                    onClick = { personCount++ },
+                    modifier = Modifier.background(Color(0xFF8E2DE2), CircleShape)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Increase", tint = Color.White)
+                }
+            }
+        }
+
         // --- INPUT SECTION ---
         Text(
-            text = "Add New",
+            text = "Add New Expense",
             color = Color.White,
             fontWeight = FontWeight.Bold,
             fontSize = 20.sp,
@@ -168,14 +238,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
         Spacer(modifier = Modifier.height(8.dp))
 
         // --- LIST SECTION ---
-        Text(
-            text = "Recent Transactions",
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -208,7 +270,6 @@ fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
                         .background(Color(0xFF2C2C2C)),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Changed to Star icon (Safe)
                     Icon(
                         Icons.Default.Star, 
                         contentDescription = null, 
@@ -226,7 +287,7 @@ fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Today",
+                        text = "Expense",
                         color = Color.Gray,
                         fontSize = 12.sp
                     )
