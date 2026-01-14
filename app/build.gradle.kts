@@ -17,7 +17,11 @@ android {
             useSupportLibrary = true
         }
     }
-
+    sourceSets {
+        getByName("main") {
+            res.srcDirs("src/main/res") 
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
