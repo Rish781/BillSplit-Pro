@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge // NEW IMPORT
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,12 +31,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.billsplitpro.ui.theme.BillSplitProTheme
-import java.text.SimpleDateFormat // NEW: Needed for date formatting
-import java.util.* // NEW: Needed for Date object
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // NEW: specific command to make app fill the ENTIRE screen
+        enableEdgeToEdge() 
+        
         setContent {
             BillSplitProTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF121212)) {
@@ -76,7 +81,13 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
 
     val currencySymbol = when(selectedCurrency) { "USD" -> "$"; "EUR" -> "€"; "GBP" -> "£"; else -> "₹" }
 
-    Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+    // UPDATED: Added safeDrawingPadding() so content doesn't hide behind the camera notch
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .safeDrawingPadding() 
+            .padding(20.dp)
+    ) {
         
         // --- TOP ROW ---
         Row(
@@ -188,7 +199,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF8E2DE2), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedContainerColor = Color(0xFF1E1E1E), unfocusedContainerColor = Color(0xFF1E1E1E))
             )
             OutlinedTextField(
-                value = amount, onValueChange = { amount = it }, label = { Text("₹ Cost") }, singleLine = true,
+                value = amount, onValueChange = { amount = it }, label = { Text("Cost") }, singleLine = true,
                 modifier = Modifier.weight(0.6f), shape = RoundedCornerShape(12.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF8E2DE2), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedContainerColor = Color(0xFF1E1E1E), unfocusedContainerColor = Color(0xFF1E1E1E))
             )
@@ -259,7 +270,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     }
 }
 
-// HELPER: Convert Timestamp to String
 fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
     return sdf.format(Date(timestamp))
@@ -277,7 +287,6 @@ fun ExpenseItem(expense: Expense, conversionRate: Double, currencySymbol: String
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(expense.name, color = Color.White, fontWeight = FontWeight.Bold)
-                    // NEW: Showing Date below the event name
                     Text("${expense.type} • ${expense.eventName} • ${formatDate(expense.date)}", color = Color.Gray, fontSize = 12.sp)
                 }
             }
