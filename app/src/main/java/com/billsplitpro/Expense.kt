@@ -8,6 +8,7 @@ data class Expense(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
     val amount: Double,
-    val type: String, // Category (Food, Travel)
-    val eventName: String = "Default" // NEW: Event Name (Goa, Office)
+    val type: String,
+    val eventName: String,
+    val date: Long = System.currentTimeMillis() // NEW: Auto-saves current time
 )

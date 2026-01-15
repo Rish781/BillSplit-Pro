@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.billsplitpro.ui.theme.BillSplitProTheme
+import java.text.SimpleDateFormat // NEW: Needed for date formatting
+import java.util.* // NEW: Needed for Date object
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,7 +78,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
         
-        // --- TOP ROW: EVENT FILTER ---
+        // --- TOP ROW ---
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -95,22 +97,16 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                 }
                 
                 DropdownMenu(expanded = eventFilterExpanded, onDismissRequest = { eventFilterExpanded = false }) {
-                    DropdownMenuItem(
-                        text = { Text("All Events") },
-                        onClick = { viewModel.setEventFilter("All Events"); eventFilterExpanded = false }
-                    )
+                    DropdownMenuItem(text = { Text("All Events") }, onClick = { viewModel.setEventFilter("All Events"); eventFilterExpanded = false })
                     Divider()
                     listOf("Goa Trip", "Office", "Home", "Weekend").forEach { event ->
-                        DropdownMenuItem(
-                            text = { Text(event) },
-                            onClick = { viewModel.setEventFilter(event); eventFilterExpanded = false }
-                        )
+                        DropdownMenuItem(text = { Text(event) }, onClick = { viewModel.setEventFilter(event); eventFilterExpanded = false })
                     }
                 }
             }
         }
 
-        // --- HEADER CARD ---
+        // --- HEADER ---
         Card(
             modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
             shape = RoundedCornerShape(24.dp),
@@ -123,19 +119,14 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Total ($currentFilter)", color = Color.White.copy(0.8f), fontSize = 14.sp)
-
                         Row {
-                            // FIXED: Changed PieChart icon to Info icon (Safe)
-                            IconButton(onClick = { showChart = true }) {
-                                Icon(Icons.Default.Info, contentDescription = "Stats", tint = Color.White)
-                            }
+                            IconButton(onClick = { showChart = true }) { Icon(Icons.Default.Info, contentDescription = "Stats", tint = Color.White) }
                             Box {
                                 Button(
                                     onClick = { currencyExpanded = true },
@@ -154,7 +145,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                             }
                         }
                     }
-
                     Text("$currencySymbol${String.format("%.2f", displayedTotal)}", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(12.dp))
                     Text("Per Person: $currencySymbol${String.format("%.2f", perPersonAmount)}", color = Color(0xFF69F0AE), fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -162,50 +152,32 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             }
         }
 
-        // --- SPLIT & SHARE ---
+        // --- SPLIT BUTTONS ---
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.background(Color(0xFF1E1E1E), RoundedCornerShape(12.dp)).padding(8.dp)) {
-                IconButton(onClick = { if (personCount > 1) personCount-- }, modifier = Modifier.size(32.dp).background(Color(0xFF2C2C2C), CircleShape)) {
-                    Text("-", color = Color.White, fontWeight = FontWeight.Bold)
-                }
+                IconButton(onClick = { if (personCount > 1) personCount-- }, modifier = Modifier.size(32.dp).background(Color(0xFF2C2C2C), CircleShape)) { Text("-", color = Color.White, fontWeight = FontWeight.Bold) }
                 Text("$personCount", color = Color.White, modifier = Modifier.padding(horizontal = 12.dp), fontWeight = FontWeight.Bold)
-                IconButton(onClick = { personCount++ }, modifier = Modifier.size(32.dp).background(Color(0xFF8E2DE2), CircleShape)) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                }
+                IconButton(onClick = { personCount++ }, modifier = Modifier.size(32.dp).background(Color(0xFF8E2DE2), CircleShape)) { Icon(Icons.Default.Add, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
             }
-
             Button(
                 onClick = {
                     val shareText = "🧾 *BillSplit Pro ($currentFilter)*\n💰 Total: $currencySymbol${String.format("%.2f", displayedTotal)}\n👥 Split by $personCount\n👉 Each: $currencySymbol${String.format("%.2f", perPersonAmount)}"
                     val sendIntent = Intent().apply { action = Intent.ACTION_SEND; putExtra(Intent.EXTRA_TEXT, shareText); type = "text/plain" }
                     context.startActivity(Intent.createChooser(sendIntent, "Share Bill"))
                 },
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
-            ) {
-                Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Share")
-            }
+                shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
+            ) { Icon(Icons.Default.Send, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(8.dp)); Text("Share") }
         }
 
-        // --- INPUT SECTION ---
+        // --- INPUTS ---
         OutlinedTextField(
-            value = eventNameInput, onValueChange = { eventNameInput = it },
-            label = { Text("Event Name (e.g. Goa)") },
-            placeholder = { Text("Leave empty for 'Default'") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF8E2DE2), unfocusedBorderColor = Color.Gray,
-                focusedTextColor = Color.White, unfocusedTextColor = Color.White,
-                focusedContainerColor = Color(0xFF1E1E1E), unfocusedContainerColor = Color(0xFF1E1E1E)
-            ),
+            value = eventNameInput, onValueChange = { eventNameInput = it }, label = { Text("Event Name (e.g. Goa)") },
+            placeholder = { Text("Leave empty for 'Default'") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF8E2DE2), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedContainerColor = Color(0xFF1E1E1E), unfocusedContainerColor = Color(0xFF1E1E1E)),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
 
@@ -227,8 +199,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                 items(categories) { category ->
                     val isSelected = category == selectedCategory
                     FilterChip(
-                        selected = isSelected, onClick = { selectedCategory = category },
-                        label = { Text(category) },
+                        selected = isSelected, onClick = { selectedCategory = category }, label = { Text(category) },
                         leadingIcon = { Icon(getIconForCategory(category), null, modifier = Modifier.size(16.dp)) },
                         colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFF8E2DE2), selectedLabelColor = Color.White, containerColor = Color(0xFF1E1E1E), labelColor = Color.Gray)
                     )
@@ -249,7 +220,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             ) { Icon(Icons.Default.Add, null) }
         }
 
-        // --- EXPENSE LIST ---
+        // --- LIST ---
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(expensesList) { expense ->
                 ExpenseItem(expense = expense, conversionRate = conversionRate, currencySymbol = currencySymbol, onDelete = { expenseToDelete = expense })
@@ -264,7 +235,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             )
         }
 
-        // --- CHART POPUP ---
         if (showChart && expensesList.isNotEmpty()) {
             AlertDialog(
                 onDismissRequest = { showChart = false }, title = { Text("Stats for $currentFilter", color = Color.White) },
@@ -272,10 +242,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         val categoryTotals = expensesList.groupBy { it.type }.mapValues { entry -> entry.value.sumOf { it.amount } }
                         val chartColors = listOf(Color(0xFFE57373), Color(0xFF81C784), Color(0xFF64B5F6), Color(0xFFFFD54F), Color(0xFFBA68C8))
-                        
-                        // Using the PieChart composable from PieChart.kt
                         PieChart(data = categoryTotals, colors = chartColors, modifier = Modifier.size(200.dp))
-                        
                         Spacer(modifier = Modifier.height(16.dp))
                         categoryTotals.keys.forEachIndexed { index, category ->
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
@@ -292,6 +259,12 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     }
 }
 
+// HELPER: Convert Timestamp to String
+fun formatDate(timestamp: Long): String {
+    val sdf = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
+    return sdf.format(Date(timestamp))
+}
+
 @Composable
 fun ExpenseItem(expense: Expense, conversionRate: Double, currencySymbol: String, onDelete: () -> Unit) {
     val displayAmount = expense.amount * conversionRate
@@ -304,7 +277,8 @@ fun ExpenseItem(expense: Expense, conversionRate: Double, currencySymbol: String
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(expense.name, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("${expense.type} • ${expense.eventName}", color = Color.Gray, fontSize = 12.sp)
+                    // NEW: Showing Date below the event name
+                    Text("${expense.type} • ${expense.eventName} • ${formatDate(expense.date)}", color = Color.Gray, fontSize = 12.sp)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
