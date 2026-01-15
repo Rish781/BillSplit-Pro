@@ -49,13 +49,12 @@ class MainActivity : ComponentActivity() {
 fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     val context = LocalContext.current
     
-    // DATA: Get Filtered Expenses
     val expensesList by viewModel.expenses.collectAsState(initial = emptyList())
     val currentFilter by viewModel.selectedEventFilter.collectAsState()
 
     var name by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
-    var eventNameInput by remember { mutableStateOf("") } // Input for new event
+    var eventNameInput by remember { mutableStateOf("") }
     
     var personCount by remember { mutableIntStateOf(1) }
     var selectedCurrency by remember { mutableStateOf("INR") }
@@ -101,7 +100,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                         onClick = { viewModel.setEventFilter("All Events"); eventFilterExpanded = false }
                     )
                     Divider()
-                    // Hardcoded common events + Dynamic ones could be added here
                     listOf("Goa Trip", "Office", "Home", "Weekend").forEach { event ->
                         DropdownMenuItem(
                             text = { Text(event) },
@@ -134,8 +132,9 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                         Text("Total ($currentFilter)", color = Color.White.copy(0.8f), fontSize = 14.sp)
 
                         Row {
+                            // FIXED: Changed PieChart icon to Info icon (Safe)
                             IconButton(onClick = { showChart = true }) {
-                                Icon(Icons.Default.PieChart, contentDescription = "Stats", tint = Color.White)
+                                Icon(Icons.Default.Info, contentDescription = "Stats", tint = Color.White)
                             }
                             Box {
                                 Button(
@@ -195,7 +194,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
         }
 
         // --- INPUT SECTION ---
-        // 1. Event Name Input (NEW)
         OutlinedTextField(
             value = eventNameInput, onValueChange = { eventNameInput = it },
             label = { Text("Event Name (e.g. Goa)") },
@@ -211,7 +209,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
 
-        // 2. Name & Amount
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             OutlinedTextField(
                 value = name, onValueChange = { name = it }, label = { Text("Item Name") }, singleLine = true,
@@ -225,7 +222,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             )
         }
         
-        // 3. Category & Add Button
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             LazyRow(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(categories) { category ->
@@ -243,7 +239,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                 onClick = {
                     val cost = amount.toDoubleOrNull()
                     if (name.isNotBlank() && cost != null) {
-                        // Use entered event name OR the current filter OR "Default"
                         val finalEvent = if (eventNameInput.isNotBlank()) eventNameInput else if (currentFilter != "All Events") currentFilter else "Default"
                         viewModel.addExpense(name, cost, selectedCategory, finalEvent)
                         name = ""
@@ -269,6 +264,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             )
         }
 
+        // --- CHART POPUP ---
         if (showChart && expensesList.isNotEmpty()) {
             AlertDialog(
                 onDismissRequest = { showChart = false }, title = { Text("Stats for $currentFilter", color = Color.White) },
@@ -276,7 +272,10 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         val categoryTotals = expensesList.groupBy { it.type }.mapValues { entry -> entry.value.sumOf { it.amount } }
                         val chartColors = listOf(Color(0xFFE57373), Color(0xFF81C784), Color(0xFF64B5F6), Color(0xFFFFD54F), Color(0xFFBA68C8))
+                        
+                        // Using the PieChart composable from PieChart.kt
                         PieChart(data = categoryTotals, colors = chartColors, modifier = Modifier.size(200.dp))
+                        
                         Spacer(modifier = Modifier.height(16.dp))
                         categoryTotals.keys.forEachIndexed { index, category ->
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
@@ -305,7 +304,6 @@ fun ExpenseItem(expense: Expense, conversionRate: Double, currencySymbol: String
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(expense.name, color = Color.White, fontWeight = FontWeight.Bold)
-                    // SHOW EVENT NAME IN LIST
                     Text("${expense.type} • ${expense.eventName}", color = Color.Gray, fontSize = 12.sp)
                 }
             }

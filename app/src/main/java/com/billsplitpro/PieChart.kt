@@ -14,28 +14,14 @@ fun PieChart(
     modifier: Modifier = Modifier
 ) {
     val total = data.values.sum()
-    
-    // FIX: Converted the result to Float explicitly so Canvas accepts it
     val angles = data.values.map { (it / total).toFloat() * 360f }
-    
-    var startAngle = -90f // Start at the top (12 o'clock)
+    var startAngle = -90f 
 
     Canvas(modifier = modifier) {
-        val strokeWidth = 80f // Thickness of the donut
-
+        val strokeWidth = 80f 
         angles.forEachIndexed { index, sweepAngle ->
             val color = colors.getOrElse(index) { Color.Gray }
-            
-            // Draw the slice
-            drawArc(
-                color = color,
-                startAngle = startAngle,
-                sweepAngle = sweepAngle,
-                useCenter = true, 
-                size = Size(size.width, size.height),
-                topLeft = Offset(0f, 0f)
-            )
-            
+            drawArc(color = color, startAngle = startAngle, sweepAngle = sweepAngle, useCenter = true, size = Size(size.width, size.height), topLeft = Offset(0f, 0f))
             startAngle += sweepAngle
         }
     }
