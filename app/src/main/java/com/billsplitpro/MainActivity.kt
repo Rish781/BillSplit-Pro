@@ -53,14 +53,29 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     var name by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var personCount by remember { mutableIntStateOf(1) }
+    
+    // Currency States
+    var selectedCurrency by remember { mutableStateOf("INR") }
+    var currencyExpanded by remember { mutableStateOf(false) }
+    val conversionRate = viewModel.rates[selectedCurrency] ?: 1.0
+
+    // Categories
     val categories = listOf("Food", "Travel", "Home", "Fun", "Other")
     var selectedCategory by remember { mutableStateOf("Food") }
-    
-    // NEW: State to track which item we are about to delete
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
 
-    val totalAmount = expensesList.sumOf { it.amount }
-    val perPersonAmount = if (personCount > 0) totalAmount / personCount else 0.0
+    // MATH: Calculate Total in INR first, then convert
+    val totalInINR = expensesList.sumOf { it.amount }
+    val displayedTotal = totalInINR * conversionRate
+    val perPersonAmount = if (personCount > 0) displayedTotal / personCount else 0.0
+
+    // Symbol helper
+    val currencySymbol = when(selectedCurrency) {
+        "USD" -> "$"
+        "EUR" -> "€"
+        "GBP" -> "£"
+        else -> "₹"
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
         
@@ -77,10 +92,57 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Total Expenses", color = Color.White.copy(0.8f), fontSize = 14.sp)
-                    Text("₹$totalAmount", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                    
+                    // TITLE + CURRENCY DROPDOWN ROW
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Total Expenses", color = Color.White.copy(0.8f), fontSize = 14.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        // Small Currency Button
+                        Box {
+                            Button(
+                                onClick = { currencyExpanded = true },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(0.2f)),
+                                modifier = Modifier.height(24.dp)
+                            ) {
+                                Text(selectedCurrency, fontSize = 10.sp, color = Color.White)
+                                Icon(Icons.Default.ArrowDropDown, null, tint = Color.White)
+                            }
+                            
+                            DropdownMenu(
+                                expanded = currencyExpanded,
+                                onDismissRequest = { currencyExpanded = false }
+                            ) {
+                                // Only showing top 4 common currencies to keep list clean
+                                listOf("INR", "USD", "EUR", "GBP").forEach { currency ->
+                                    DropdownMenuItem(
+                                        text = { Text(currency) },
+                                        onClick = {
+                                            selectedCurrency = currency
+                                            currencyExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // DISPLAY TOTAL
+                    Text(
+                        text = "$currencySymbol${String.format("%.2f", displayedTotal)}", 
+                        color = Color.White, 
+                        fontSize = 32.sp, 
+                        fontWeight = FontWeight.Bold
+                    )
+                    
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Per Person: ₹${String.format("%.2f", perPersonAmount)}", color = Color(0xFF69F0AE), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Per Person: $currencySymbol${String.format("%.2f", perPersonAmount)}", 
+                        color = Color(0xFF69F0AE), 
+                        fontSize = 20.sp, 
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -91,7 +153,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Split Counter
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.background(Color(0xFF1E1E1E), RoundedCornerShape(12.dp)).padding(8.dp)) {
                 IconButton(onClick = { if (personCount > 1) personCount-- }, modifier = Modifier.size(32.dp).background(Color(0xFF2C2C2C), CircleShape)) {
                     Text("-", color = Color.White, fontWeight = FontWeight.Bold)
@@ -102,10 +163,9 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                 }
             }
 
-            // Share Button
             Button(
                 onClick = {
-                    val shareText = "💰 Total: ₹$totalAmount\n👥 Split by $personCount\n👉 Each: ₹${String.format("%.2f", perPersonAmount)}"
+                    val shareText = "💰 Total: $currencySymbol${String.format("%.2f", displayedTotal)}\n👥 Split by $personCount\n👉 Each: $currencySymbol${String.format("%.2f", perPersonAmount)}"
                     val sendIntent = Intent().apply { action = Intent.ACTION_SEND; putExtra(Intent.EXTRA_TEXT, shareText); type = "text/plain" }
                     context.startActivity(Intent.createChooser(sendIntent, "Share Bill"))
                 },
@@ -136,7 +196,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
             OutlinedTextField(
                 value = amount, onValueChange = { amount = it },
-                label = { Text("Amount (₹)") },
+                label = { Text("Amount (INR)") }, // Clarified that input is always INR base
                 singleLine = true,
                 modifier = Modifier.weight(1f).padding(end = 8.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -194,36 +254,23 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
         // --- EXPENSE LIST ---
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(expensesList) { expense ->
-                // CLICKING DELETE NOW TRIGGERS THE POPUP
                 ExpenseItem(expense = expense, onDelete = { expenseToDelete = expense })
             }
         }
 
-        // --- DELETE CONFIRMATION DIALOG ---
+        // --- DELETE DIALOG ---
         if (expenseToDelete != null) {
             AlertDialog(
                 onDismissRequest = { expenseToDelete = null },
-                title = { Text(text = "Delete Expense?") },
-                text = { Text("Are you sure you want to delete '${expenseToDelete?.name}'? This cannot be undone.") },
+                title = { Text("Delete Expense?") },
+                text = { Text("Delete '${expenseToDelete?.name}'?") },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            viewModel.removeExpense(expenseToDelete!!)
-                            expenseToDelete = null // Close dialog
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF5350))
-                    ) {
-                        Text("Delete")
+                    TextButton(onClick = { viewModel.removeExpense(expenseToDelete!!); expenseToDelete = null }) {
+                        Text("Delete", color = Color(0xFFEF5350))
                     }
                 },
-                dismissButton = {
-                    TextButton(onClick = { expenseToDelete = null }) {
-                        Text("Cancel", color = Color.White)
-                    }
-                },
-                containerColor = Color(0xFF2C2C2C),
-                titleContentColor = Color.White,
-                textContentColor = Color.Gray
+                dismissButton = { TextButton(onClick = { expenseToDelete = null }) { Text("Cancel", color = Color.White) } },
+                containerColor = Color(0xFF2C2C2C), titleContentColor = Color.White, textContentColor = Color.Gray
             )
         }
     }
@@ -231,21 +278,10 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
 
 @Composable
 fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-        elevation = CardDefaults.cardElevation(2.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), elevation = CardDefaults.cardElevation(2.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFF2C2C2C)),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFF2C2C2C)), contentAlignment = Alignment.Center) {
                     Icon(getIconForCategory(expense.type), contentDescription = null, tint = Color.White.copy(0.8f))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
@@ -256,20 +292,12 @@ fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("₹${expense.amount}", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 8.dp))
-                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF5350))
-                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF5350)) }
             }
         }
     }
 }
 
 fun getIconForCategory(category: String): ImageVector {
-    return when (category) {
-        "Food" -> Icons.Default.ShoppingCart
-        "Travel" -> Icons.Default.Info
-        "Home" -> Icons.Default.Home
-        "Fun" -> Icons.Default.Star
-        else -> Icons.Default.List
-    }
+    return when (category) { "Food" -> Icons.Default.ShoppingCart; "Travel" -> Icons.Default.Info; "Home" -> Icons.Default.Home; "Fun" -> Icons.Default.Star; else -> Icons.Default.List }
 }
