@@ -114,7 +114,6 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
                                 expanded = currencyExpanded,
                                 onDismissRequest = { currencyExpanded = false }
                             ) {
-                                // Only showing top 4 common currencies to keep list clean
                                 listOf("INR", "USD", "EUR", "GBP").forEach { currency ->
                                     DropdownMenuItem(
                                         text = { Text(currency) },
@@ -196,7 +195,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
             OutlinedTextField(
                 value = amount, onValueChange = { amount = it },
-                label = { Text("Amount (INR)") }, // Clarified that input is always INR base
+                label = { Text("Amount (INR)") },
                 singleLine = true,
                 modifier = Modifier.weight(1f).padding(end = 8.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -254,7 +253,13 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
         // --- EXPENSE LIST ---
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(expensesList) { expense ->
-                ExpenseItem(expense = expense, onDelete = { expenseToDelete = expense })
+                // UPDATED: Now passing the conversion rate and symbol down to the item
+                ExpenseItem(
+                    expense = expense, 
+                    conversionRate = conversionRate, 
+                    currencySymbol = currencySymbol,
+                    onDelete = { expenseToDelete = expense }
+                )
             }
         }
 
@@ -276,8 +281,12 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     }
 }
 
+// UPDATED: Now accepts conversion rate and symbol
 @Composable
-fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
+fun ExpenseItem(expense: Expense, conversionRate: Double, currencySymbol: String, onDelete: () -> Unit) {
+    // CALCULATE: Convert this specific item's price
+    val displayAmount = expense.amount * conversionRate
+
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), elevation = CardDefaults.cardElevation(2.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -291,7 +300,13 @@ fun ExpenseItem(expense: Expense, onDelete: () -> Unit) {
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("₹${expense.amount}", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 8.dp))
+                // SHOW: The converted amount with the correct symbol
+                Text(
+                    text = "$currencySymbol${String.format("%.2f", displayAmount)}", 
+                    color = Color(0xFF4CAF50), 
+                    fontWeight = FontWeight.Bold, 
+                    modifier = Modifier.padding(end = 8.dp)
+                )
                 IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF5350)) }
             }
         }
