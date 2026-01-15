@@ -15,8 +15,8 @@ fun PieChart(
 ) {
     val total = data.values.sum()
     
-    // Convert data to angles (360 degrees total)
-    val angles = data.values.map { (it / total) * 360f }
+    // FIX: Converted the result to Float explicitly so Canvas accepts it
+    val angles = data.values.map { (it / total).toFloat() * 360f }
     
     var startAngle = -90f // Start at the top (12 o'clock)
 
