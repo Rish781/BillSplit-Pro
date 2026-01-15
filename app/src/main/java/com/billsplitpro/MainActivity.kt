@@ -48,37 +48,70 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
     val context = LocalContext.current
+    
+    // DATA: Get Filtered Expenses
     val expensesList by viewModel.expenses.collectAsState(initial = emptyList())
+    val currentFilter by viewModel.selectedEventFilter.collectAsState()
 
     var name by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
-    var personCount by remember { mutableIntStateOf(1) }
+    var eventNameInput by remember { mutableStateOf("") } // Input for new event
     
-    // Currency States
+    var personCount by remember { mutableIntStateOf(1) }
     var selectedCurrency by remember { mutableStateOf("INR") }
     var currencyExpanded by remember { mutableStateOf(false) }
     val conversionRate = viewModel.rates[selectedCurrency] ?: 1.0
 
-    // Categories
     val categories = listOf("Food", "Travel", "Home", "Fun", "Other")
     var selectedCategory by remember { mutableStateOf("Food") }
+    
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
+    var showChart by remember { mutableStateOf(false) }
+    var eventFilterExpanded by remember { mutableStateOf(false) }
 
-    // MATH: Calculate Total in INR first, then convert
     val totalInINR = expensesList.sumOf { it.amount }
     val displayedTotal = totalInINR * conversionRate
     val perPersonAmount = if (personCount > 0) displayedTotal / personCount else 0.0
 
-    // Symbol helper
-    val currencySymbol = when(selectedCurrency) {
-        "USD" -> "$"
-        "EUR" -> "€"
-        "GBP" -> "£"
-        else -> "₹"
-    }
+    val currencySymbol = when(selectedCurrency) { "USD" -> "$"; "EUR" -> "€"; "GBP" -> "£"; else -> "₹" }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
         
+        // --- TOP ROW: EVENT FILTER ---
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("Event:", color = Color.Gray, fontSize = 16.sp)
+            
+            Box {
+                Button(
+                    onClick = { eventFilterExpanded = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2C)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(currentFilter, color = Color.White)
+                    Icon(Icons.Default.ArrowDropDown, null, tint = Color.White)
+                }
+                
+                DropdownMenu(expanded = eventFilterExpanded, onDismissRequest = { eventFilterExpanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text("All Events") },
+                        onClick = { viewModel.setEventFilter("All Events"); eventFilterExpanded = false }
+                    )
+                    Divider()
+                    // Hardcoded common events + Dynamic ones could be added here
+                    listOf("Goa Trip", "Office", "Home", "Weekend").forEach { event ->
+                        DropdownMenuItem(
+                            text = { Text(event) },
+                            onClick = { viewModel.setEventFilter(event); eventFilterExpanded = false }
+                        )
+                    }
+                }
+            }
+        }
+
         // --- HEADER CARD ---
         Card(
             modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
@@ -93,60 +126,44 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     
-                    // TITLE + CURRENCY DROPDOWN ROW
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Total Expenses", color = Color.White.copy(0.8f), fontSize = 14.sp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        
-                        // Small Currency Button
-                        Box {
-                            Button(
-                                onClick = { currencyExpanded = true },
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(0.2f)),
-                                modifier = Modifier.height(24.dp)
-                            ) {
-                                Text(selectedCurrency, fontSize = 10.sp, color = Color.White)
-                                Icon(Icons.Default.ArrowDropDown, null, tint = Color.White)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Total ($currentFilter)", color = Color.White.copy(0.8f), fontSize = 14.sp)
+
+                        Row {
+                            IconButton(onClick = { showChart = true }) {
+                                Icon(Icons.Default.PieChart, contentDescription = "Stats", tint = Color.White)
                             }
-                            
-                            DropdownMenu(
-                                expanded = currencyExpanded,
-                                onDismissRequest = { currencyExpanded = false }
-                            ) {
-                                listOf("INR", "USD", "EUR", "GBP").forEach { currency ->
-                                    DropdownMenuItem(
-                                        text = { Text(currency) },
-                                        onClick = {
-                                            selectedCurrency = currency
-                                            currencyExpanded = false
-                                        }
-                                    )
+                            Box {
+                                Button(
+                                    onClick = { currencyExpanded = true },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(0.2f)),
+                                    modifier = Modifier.height(24.dp)
+                                ) {
+                                    Text(selectedCurrency, fontSize = 10.sp, color = Color.White)
+                                    Icon(Icons.Default.ArrowDropDown, null, tint = Color.White)
+                                }
+                                DropdownMenu(expanded = currencyExpanded, onDismissRequest = { currencyExpanded = false }) {
+                                    listOf("INR", "USD", "EUR", "GBP").forEach { currency ->
+                                        DropdownMenuItem(text = { Text(currency) }, onClick = { selectedCurrency = currency; currencyExpanded = false })
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // DISPLAY TOTAL
-                    Text(
-                        text = "$currencySymbol${String.format("%.2f", displayedTotal)}", 
-                        color = Color.White, 
-                        fontSize = 32.sp, 
-                        fontWeight = FontWeight.Bold
-                    )
-                    
+                    Text("$currencySymbol${String.format("%.2f", displayedTotal)}", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Per Person: $currencySymbol${String.format("%.2f", perPersonAmount)}", 
-                        color = Color(0xFF69F0AE), 
-                        fontSize = 20.sp, 
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Per Person: $currencySymbol${String.format("%.2f", perPersonAmount)}", color = Color(0xFF69F0AE), fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
-        // --- SPLIT & SHARE ROW ---
+        // --- SPLIT & SHARE ---
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -164,7 +181,7 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
 
             Button(
                 onClick = {
-                    val shareText = "💰 Total: $currencySymbol${String.format("%.2f", displayedTotal)}\n👥 Split by $personCount\n👉 Each: $currencySymbol${String.format("%.2f", perPersonAmount)}"
+                    val shareText = "🧾 *BillSplit Pro ($currentFilter)*\n💰 Total: $currencySymbol${String.format("%.2f", displayedTotal)}\n👥 Split by $personCount\n👉 Each: $currencySymbol${String.format("%.2f", perPersonAmount)}"
                     val sendIntent = Intent().apply { action = Intent.ACTION_SEND; putExtra(Intent.EXTRA_TEXT, shareText); type = "text/plain" }
                     context.startActivity(Intent.createChooser(sendIntent, "Share Bill"))
                 },
@@ -178,9 +195,11 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
         }
 
         // --- INPUT SECTION ---
+        // 1. Event Name Input (NEW)
         OutlinedTextField(
-            value = name, onValueChange = { name = it },
-            label = { Text("What for?") },
+            value = eventNameInput, onValueChange = { eventNameInput = it },
+            label = { Text("Event Name (e.g. Goa)") },
+            placeholder = { Text("Leave empty for 'Default'") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             shape = RoundedCornerShape(12.dp),
@@ -192,101 +211,91 @@ fun BillSplitApp(viewModel: MainViewModel = viewModel()) {
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
 
-        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+        // 2. Name & Amount
+        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             OutlinedTextField(
-                value = amount, onValueChange = { amount = it },
-                label = { Text("Amount (INR)") },
-                singleLine = true,
-                modifier = Modifier.weight(1f).padding(end = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF8E2DE2), unfocusedBorderColor = Color.Gray,
-                    focusedTextColor = Color.White, unfocusedTextColor = Color.White,
-                    focusedContainerColor = Color(0xFF1E1E1E), unfocusedContainerColor = Color(0xFF1E1E1E)
-                )
+                value = name, onValueChange = { name = it }, label = { Text("Item Name") }, singleLine = true,
+                modifier = Modifier.weight(1f).padding(end = 8.dp), shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF8E2DE2), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedContainerColor = Color(0xFF1E1E1E), unfocusedContainerColor = Color(0xFF1E1E1E))
             )
-            
+            OutlinedTextField(
+                value = amount, onValueChange = { amount = it }, label = { Text("₹ Cost") }, singleLine = true,
+                modifier = Modifier.weight(0.6f), shape = RoundedCornerShape(12.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF8E2DE2), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedContainerColor = Color(0xFF1E1E1E), unfocusedContainerColor = Color(0xFF1E1E1E))
+            )
+        }
+        
+        // 3. Category & Add Button
+        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            LazyRow(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(categories) { category ->
+                    val isSelected = category == selectedCategory
+                    FilterChip(
+                        selected = isSelected, onClick = { selectedCategory = category },
+                        label = { Text(category) },
+                        leadingIcon = { Icon(getIconForCategory(category), null, modifier = Modifier.size(16.dp)) },
+                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFF8E2DE2), selectedLabelColor = Color.White, containerColor = Color(0xFF1E1E1E), labelColor = Color.Gray)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(8.dp))
             Button(
                 onClick = {
                     val cost = amount.toDoubleOrNull()
                     if (name.isNotBlank() && cost != null) {
-                        viewModel.addExpense(name, cost, selectedCategory)
+                        // Use entered event name OR the current filter OR "Default"
+                        val finalEvent = if (eventNameInput.isNotBlank()) eventNameInput else if (currentFilter != "All Events") currentFilter else "Default"
+                        viewModel.addExpense(name, cost, selectedCategory, finalEvent)
                         name = ""
                         amount = ""
                     }
                 },
-                modifier = Modifier.height(64.dp).aspectRatio(1f),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E2DE2))
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-            }
-        }
-
-        // --- CATEGORY SELECTOR ---
-        LazyRow(
-            modifier = Modifier.padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(categories) { category ->
-                val isSelected = category == selectedCategory
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { selectedCategory = category },
-                    label = { Text(category) },
-                    leadingIcon = {
-                        Icon(getIconForCategory(category), contentDescription = null, modifier = Modifier.size(16.dp))
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFF8E2DE2),
-                        selectedLabelColor = Color.White,
-                        selectedLeadingIconColor = Color.White,
-                        containerColor = Color(0xFF1E1E1E),
-                        labelColor = Color.Gray
-                    ),
-                    border = FilterChipDefaults.filterChipBorder(borderColor = if(isSelected) Color.Transparent else Color.Gray)
-                )
-            }
+                modifier = Modifier.height(48.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E2DE2))
+            ) { Icon(Icons.Default.Add, null) }
         }
 
         // --- EXPENSE LIST ---
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(expensesList) { expense ->
-                // UPDATED: Now passing the conversion rate and symbol down to the item
-                ExpenseItem(
-                    expense = expense, 
-                    conversionRate = conversionRate, 
-                    currencySymbol = currencySymbol,
-                    onDelete = { expenseToDelete = expense }
-                )
+                ExpenseItem(expense = expense, conversionRate = conversionRate, currencySymbol = currencySymbol, onDelete = { expenseToDelete = expense })
             }
         }
 
-        // --- DELETE DIALOG ---
         if (expenseToDelete != null) {
             AlertDialog(
-                onDismissRequest = { expenseToDelete = null },
-                title = { Text("Delete Expense?") },
-                text = { Text("Delete '${expenseToDelete?.name}'?") },
-                confirmButton = {
-                    TextButton(onClick = { viewModel.removeExpense(expenseToDelete!!); expenseToDelete = null }) {
-                        Text("Delete", color = Color(0xFFEF5350))
+                onDismissRequest = { expenseToDelete = null }, title = { Text("Delete?") }, text = { Text("Delete '${expenseToDelete?.name}'?") },
+                confirmButton = { TextButton(onClick = { viewModel.removeExpense(expenseToDelete!!); expenseToDelete = null }) { Text("Delete", color = Color(0xFFEF5350)) } },
+                dismissButton = { TextButton(onClick = { expenseToDelete = null }) { Text("Cancel", color = Color.White) } }, containerColor = Color(0xFF2C2C2C), titleContentColor = Color.White, textContentColor = Color.Gray
+            )
+        }
+
+        if (showChart && expensesList.isNotEmpty()) {
+            AlertDialog(
+                onDismissRequest = { showChart = false }, title = { Text("Stats for $currentFilter", color = Color.White) },
+                text = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        val categoryTotals = expensesList.groupBy { it.type }.mapValues { entry -> entry.value.sumOf { it.amount } }
+                        val chartColors = listOf(Color(0xFFE57373), Color(0xFF81C784), Color(0xFF64B5F6), Color(0xFFFFD54F), Color(0xFFBA68C8))
+                        PieChart(data = categoryTotals, colors = chartColors, modifier = Modifier.size(200.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        categoryTotals.keys.forEachIndexed { index, category ->
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
+                                Box(modifier = Modifier.size(12.dp).background(chartColors.getOrElse(index) { Color.Gray }, CircleShape))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(category, color = Color.White)
+                            }
+                        }
                     }
                 },
-                dismissButton = { TextButton(onClick = { expenseToDelete = null }) { Text("Cancel", color = Color.White) } },
-                containerColor = Color(0xFF2C2C2C), titleContentColor = Color.White, textContentColor = Color.Gray
+                confirmButton = { TextButton(onClick = { showChart = false }) { Text("Close", color = Color(0xFF8E2DE2)) } }, containerColor = Color(0xFF1E1E1E)
             )
         }
     }
 }
 
-// UPDATED: Now accepts conversion rate and symbol
 @Composable
 fun ExpenseItem(expense: Expense, conversionRate: Double, currencySymbol: String, onDelete: () -> Unit) {
-    // CALCULATE: Convert this specific item's price
     val displayAmount = expense.amount * conversionRate
-
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), elevation = CardDefaults.cardElevation(2.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -296,17 +305,12 @@ fun ExpenseItem(expense: Expense, conversionRate: Double, currencySymbol: String
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(expense.name, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text(expense.type, color = Color.Gray, fontSize = 12.sp)
+                    // SHOW EVENT NAME IN LIST
+                    Text("${expense.type} • ${expense.eventName}", color = Color.Gray, fontSize = 12.sp)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // SHOW: The converted amount with the correct symbol
-                Text(
-                    text = "$currencySymbol${String.format("%.2f", displayAmount)}", 
-                    color = Color(0xFF4CAF50), 
-                    fontWeight = FontWeight.Bold, 
-                    modifier = Modifier.padding(end = 8.dp)
-                )
+                Text("$currencySymbol${String.format("%.2f", displayAmount)}", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 8.dp))
                 IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF5350)) }
             }
         }

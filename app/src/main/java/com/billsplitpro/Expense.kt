@@ -8,5 +8,6 @@ data class Expense(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
     val amount: Double,
-    val type: String = "Other" // NEW: Stores "Food", "Travel", etc.
+    val type: String, // Category (Food, Travel)
+    val eventName: String = "Default" // NEW: Event Name (Goa, Office)
 )
